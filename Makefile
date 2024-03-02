@@ -8,10 +8,10 @@ OBJECTS = usbdrv/usbdrv.o usbdrv/usbdrvasm.o usbdrv/oddebug.o \
 	libs-device/osccal.o main.o
 
 .c.o:
-	$(AVRCC) -c $< -o $@
+	$(AVRCC) $(param) -c $< -o $@
 
 .S.o:
-	$(AVRCC) -x assembler-with-cpp -c $< -o $@
+	$(AVRCC) $(param) -x assembler-with-cpp -c $< -o $@
 
 all: main.hex
 

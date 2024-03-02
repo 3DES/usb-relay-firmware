@@ -231,7 +231,7 @@ extern void calibrateOscillator(void);
  * with libusb: 0x16c0/0x5dc.  Use this VID/PID pair ONLY if you understand
  * the implications!
  */
-#define  USB_CFG_DEVICE_ID       0xdf, 0x05 /* = 0x05dc = 1500 */
+#define  USB_CFG_DEVICE_ID       0xdf, 0x05 /* = 0x05df = 1500 */
 /* This is the ID of the product, low byte first. It is interpreted in the
  * scope of the vendor ID. If you have registered your own VID with usb.org
  * or if you have licensed a PID from somebody else, define it here. Otherwise
@@ -255,7 +255,13 @@ extern void calibrateOscillator(void);
  * obdev's free shared VID/PID pair. See the file USB-IDs-for-free.txt for
  * details.
  */
-#define USB_CFG_DEVICE_NAME     'U', 'S', 'B', 'R', 'e', 'l', 'a', 'y', '1'
+#if CHANNELS == 1
+#   define USB_CFG_DEVICE_NAME     'U', 'S', 'B', 'R', 'e', 'l', 'a', 'y', '1'
+#elif CHANNELS == 2
+#   define USB_CFG_DEVICE_NAME     'U', 'S', 'B', 'R', 'e', 'l', 'a', 'y', '2'
+#else
+#   error please define CHANNELS to 1 or 2
+#endif
 #define USB_CFG_DEVICE_NAME_LEN 9
 /* Same as above for the device name. If you don't want a device name, undefine
  * the macros. See the file USB-IDs-for-free.txt before you assign a name if

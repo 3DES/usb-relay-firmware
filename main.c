@@ -26,7 +26,10 @@
 #include "usbdrv.h"
 #include "libs-device/osccal.h"
 
-#define RELAY_BIT 8 /* Bit 3 on port B */
+#define RELAY_BIT1 (1 << 3) /* Bit 3 on port B */
+#if CHANNELS == 2
+#   define RELAY_BIT2 (1 << 4) /* Bit 4 on port B */
+#endif
 #define CMD_ALL_ON 0xfe
 #define CMD_ALL_OFF 0xfc
 #define CMD_ON 0xff
@@ -38,15 +41,15 @@ uchar serno[6];
 
 PROGMEM const char usbHidReportDescriptor[22] = {
 	0x06, 0x00, 0xff,		/* USAGE PAGE (Generic Desktop) */
-	0x09, 0x01,			/* USAGE (Vendor Usage 1) */
-	0xa1, 0x01,			/* COLLECTION (Application) */
-	0x15, 0x00,			/*   LOGICAL_MINIMUM (0) */
+	0x09, 0x01,			    /* USAGE (Vendor Usage 1) */
+	0xa1, 0x01,			    /* COLLECTION (Application) */
+	0x15, 0x00,			    /*   LOGICAL_MINIMUM (0) */
 	0x26, 0xff, 0x00,		/*   LOGICAL_MAXIMUM (255) */
-	0x75, 0x08,			/*   REPORT_SIZE (8) */
-	0x95, 0x08,			/*   REPORT_COUNT (8) */
-	0x09, 0x00,			/*   USAGE (Undefined) */
+	0x75, 0x08,			    /*   REPORT_SIZE (8) */
+	0x95, 0x08,			    /*   REPORT_COUNT (8) */
+	0x09, 0x00,			    /*   USAGE (Undefined) */
 	0xb2, 0x02, 0x01,		/*   FEATURE (Data, Var, Abs, Buf) */
-	0xc0				/* END_COLLECTION */
+	0xc0				    /* END_COLLECTION */
 };
 
 void fetch_serno(void)
@@ -107,9 +110,14 @@ uchar usbFunctionRead(uchar *data, uchar len)
 			data[i] = serno[i];
 		}
 		data[6] = data[7] = 0;
-		if (PORTB & RELAY_BIT) {
-			data[7] = 1;
+		if (PORTB & RELAY_BIT1) {
+			data[7] |= 1;
 		}
+#if CHANNELS == 2
+		if (PORTB & RELAY_BIT2) {
+			data[7] |= 2;
+		}
+#endif
 		return len;
 	}
 
@@ -119,17 +127,33 @@ uchar usbFunctionRead(uchar *data, uchar len)
 uchar usbFunctionWrite(uchar *data, uchar len)
 {
 	if (data[0] == CMD_ALL_ON) {
-		PORTB |= RELAY_BIT;
+		PORTB |= RELAY_BIT1;
+#if CHANNELS == 2
+		PORTB |= RELAY_BIT2;
+#endif
 	} else if (data[0] == CMD_ALL_OFF) {
-		PORTB &= ~(RELAY_BIT);
+		PORTB &= ~(RELAY_BIT1);
+#if CHANNELS == 2
+		PORTB &= ~(RELAY_BIT2);
+#endif
 	} else if (data[0] == CMD_ON) {
 		if (data[1] == 1) {
-			PORTB |= RELAY_BIT;
+			PORTB |= RELAY_BIT1;
 		}
+#if CHANNELS == 2
+		else if (data[1] == 2) {
+			PORTB |= RELAY_BIT2;
+		}
+#endif
 	} else if (data[0] == CMD_OFF) {
 		if (data[1] == 1) {
-			PORTB &= ~(RELAY_BIT);
+			PORTB &= ~(RELAY_BIT1);
 		}
+#if CHANNELS == 2
+		else if (data[1] == 2) {
+			PORTB &= ~(RELAY_BIT2);
+		}
+#endif
 	} else if (data[0] == CMD_SET_SERIAL) {
 		update_serno(&data[1], 6);
 	}
@@ -137,7 +161,7 @@ uchar usbFunctionWrite(uchar *data, uchar len)
 	return len;
 }
 
-int __attribute__((noreturn)) main(void)
+int __attribute__((__noreturn__)) main(void)
 {
 	unsigned char i;
 
@@ -155,7 +179,10 @@ int __attribute__((noreturn)) main(void)
 	usbDeviceConnect();
 
 	/* Set the relay bit to output mode */
-	DDRB |= RELAY_BIT;
+	DDRB |= RELAY_BIT1;
+#if CHANNELS == 2
+	DDRB |= RELAY_BIT2;
+#endif
 
 	sei(); /* We're ready to go; enable interrupts */
 
